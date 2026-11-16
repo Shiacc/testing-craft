@@ -1,0 +1,116 @@
+# Gitee Go 流水线示例（本仓库托管在 Gitee，故以 Gitee Go 为主要参考）
+#
+# 注意：Gitee Go 的字段名随版本演进较快，本文件用于表达**流水线分层与门禁意图**，
+# 落地时请对照当前控制台生成的模板校正字段。逻辑结构与 github-actions/ci.yml 完全一致。
+#
+# 设计要点（对应 docs/07 §6）：
+# 1. 快轨 / 慢轨双轨：PR 只跑快轨（< 5 分钟），主分支跑全量；
+# 2. 每层测试都产出 JUnit XML，交给同一份聚合报告；
+# 3. 门禁只有 3 条：快轨全绿、慢轨全绿、性能阈值不退化 —— 少而硬。
+
+version: "1.0"
+name: testing-craft-ci
+displayName: 分层测试流水线
+
+triggers:
+  push:
+    branches:
+      include:
+        - master
+        - "release/*"
+  pull_request:
+    branches:
+      include:
+        - master
+
+variables:
+  PYTHON_VERSION: "3.12"
+  PIP_CACHE_DIR: "${WORKSPACE}/.pip-cache"
+
+stages:
+  # ---------------------------------------------------------------- 静态检查
+  - stage:
+      name: static
+      displayName: 静态检查（秒级反馈）
+      strategy: fast-fail
+    steps:
+      - step: run@shell
+        name: syntax
+        displayName: 语法与导入检查
+        script: |
+          python -m compileall -q labs/01-unit-pytest/src labs/02-api-contract/app
+
+  # ---------------------------------------------------------------- 快轨
+  - stage:
+      name: fast
+      displayName: 快轨（单元 + 接口 + UI 冒烟）
+      dependsOn: [static]
+    steps:
+      - step: run@shell
+        name: unit-api
+        displayName: 单元与接口测试（分片并行）
+        script: |
+          python -m pip install -q -r labs/requirements.txt
+          cd labs/05-ci
+          python scripts/ci_local.py --suites unit,api --shards 2 --budget 120
+        artifacts:
+          - reports:
+              type: junit
+              path: labs/05-ci/.ci-results/*.xml
+
+      - step: run@shell
+        name: ui-smoke
+        displayName: UI 核心旅程（仅 smoke 标记）
+        script: |
+          cd labs/03-ui-playwright
+          python -m pytest -q -m smoke --junitxml=../../.ci-results/ui-smoke.xml
+        artifacts:
+          - reports:
+              type: junit
+              path: .ci-results/ui-smoke.xml
+
+  # ---------------------------------------------------------------- 慢轨
+  - stage:
+      name: slow
+      displayName: 慢轨（全量 + 性能门禁）
+      dependsOn: [fast]
+      condition: |
+        return ${{ triggers.push.branch }} == 'master'
+    steps:
+      - step: run@shell
+        name: full-suite
+        displayName: 全量回归（含 slow 用例）
+        script: |
+          cd labs/05-ci
+          python scripts/ci_local.py --full --shards 4 --budget 600
+        artifacts:
+          - reports:
+              type: junit
+              path: labs/05-ci/.ci-results/*.xml
+
+      - step: run@shell
+        name: perf-gate
+        displayName: 性能阈值门禁
+        script: |
+          cd labs/04-perf
+          python py_load_smoke.py --concurrency 20 --requests 500 --p95 200 --p99 500
+        # 非 0 退出即阻断发布：性能阈值与功能门禁同级，而不是"仅供参考"
+
+  # ---------------------------------------------------------------- 发布准入
+  - stage:
+      name: gate
+      displayName: 发布准入
+      dependsOn: [fast, slow]
+    steps:
+      - step: run@shell
+        name: assert-summary
+        displayName: 汇总报告与门禁结论
+        script: |
+          cd labs/05-ci
+          python - <<'PY'
+          import pathlib, sys
+          summary = pathlib.Path(".ci-results/summary.md")
+          text = summary.read_text(encoding="utf-8")
+          print(text)
+          sys.exit(0 if "门禁结论：通过" in text else 1)
+          PY

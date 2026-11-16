@@ -1,0 +1,61 @@
+version: 1
+
+# ---------------------------------------------------------------------------
+# 用例资产登记表（对应 docs/04 §2 能力模型里的「资产管理」）。
+# 平台不认代码目录结构，只认这张表 —— 这是"平台"与"框架"的第一个分水岭：
+# 资产先登记，才能被调度、被分片、被度量、被审计。
+# ---------------------------------------------------------------------------
+
+environments:
+  local:
+    description: 本机直跑，无外部依赖
+    extra_args: []
+  ci:
+    description: CI 执行机，收紧超时与并发
+    extra_args: ["-p", "no:cacheprovider"]
+
+gate:
+  max_failures: 0          # 任一用例失败即阻断
+  max_duration_s: 300      # 墙面耗时预算
+  require_pass_rate: 1.0   # 通过率下限
+
+suites:
+  - id: unit
+    name: 单元测试（L1）
+    cwd: ../../01-unit-pytest
+    command: ["{python}", "-X", "utf8", "-m", "pytest", "-q"]
+    tags: [smoke, unit, fast]
+    kind: test
+    shardable: true
+    timeout_s: 120
+    owner: team-pricing
+
+  - id: api
+    name: 接口与契约测试（L3）
+    cwd: ../../02-api-contract
+    command: ["{python}", "-X", "utf8", "-m", "pytest", "-q"]
+    tags: [smoke, api, fast]
+    kind: test
+    shardable: true
+    timeout_s: 180
+    owner: team-order
+
+  - id: ui
+    name: 端到端核心旅程（L4）
+    cwd: ../../03-ui-playwright
+    command: ["{python}", "-X", "utf8", "-m", "pytest", "-q"]
+    tags: [smoke, ui, slow]
+    kind: test
+    shardable: false
+    timeout_s: 300
+    owner: team-frontend
+
+  - id: perf
+    name: 性能阈值门禁（L5）
+    cwd: ../../04-perf
+    command: ["{python}", "-X", "utf8", "py_load_smoke.py", "--concurrency", "10", "--requests", "300"]
+    tags: [perf, slow]
+    kind: perf
+    shardable: false
+    timeout_s: 300
+    owner: team-platform

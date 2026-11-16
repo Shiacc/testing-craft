@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>结算台 · Labs 03</title>
+  <style>
+    :root { --fg:#1f2329; --muted:#646a73; --line:#dee0e3; --brand:#2563eb; --bg:#f7f8fa; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; color:var(--fg); background:var(--bg); }
+    main { max-width: 560px; margin: 40px auto; background:#fff; border:1px solid var(--line); border-radius:10px; padding:28px; }
+    h1 { font-size:20px; margin:0 0 4px; }
+    p.sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    label { font-size:14px; color:var(--muted); }
+    input, select { width:180px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; }
+    input[readonly] { background:#fafafa; color:var(--muted); }
+    .summary { border-top:1px solid var(--line); margin-top:18px; padding-top:14px; }
+    .summary .row { margin-bottom:8px; }
+    .summary .total { font-size:22px; font-weight:600; color:#c0392b; }
+    .hint { font-size:12px; color:var(--muted); min-height:16px; margin:-6px 0 10px; }
+    .hint.warn { color:#d97706; }
+    button { width:100%; padding:11px; border:0; border-radius:6px; background:var(--brand); color:#fff; font-size:15px; cursor:pointer; }
+    button:disabled { background:#c9cdd4; cursor:not-allowed; }
+    .message { margin-top:14px; font-size:14px; min-height:20px; }
+    .message.error { color:#c0392b; }
+    .message.ok { color:#0f9d58; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>结算台</h1>
+  <p class="sub">Labs 03 · E2E 实验页面（与被测后端共用同一套优惠规则）</p>
+
+  <div class="row">
+    <label for="unit-price">商品单价</label>
+    <input id="unit-price" data-testid="unit-price" value="100.00" readonly />
+  </div>
+
+  <div class="row">
+    <label for="qty">数量</label>
+    <input id="qty" data-testid="qty" type="number" min="1" value="1" />
+  </div>
+
+  <div class="row">
+    <label for="level">会员等级</label>
+    <select id="level" data-testid="level">
+      <option value="NORMAL">普通会员</option>
+      <option value="SILVER">银卡</option>
+      <option value="GOLD">金卡</option>
+      <option value="BLACK">黑金</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label for="coupon">优惠券</label>
+    <select id="coupon" data-testid="coupon">
+      <option value="">不使用</option>
+      <option value="FULL100-20">满 100 减 20</option>
+      <option value="FULL300-50">满 300 减 50</option>
+    </select>
+  </div>
+  <div class="hint" data-testid="coupon-hint"></div>
+
+  <div class="row">
+    <button id="calc" data-testid="calc" type="button" style="width:auto;padding:8px 18px;font-size:14px;">重新计算</button>
+    <span></span>
+  </div>
+
+  <div class="summary">
+    <div class="row"><label>小计</label><span data-testid="subtotal">¥100.00</span></div>
+    <div class="row"><label>优惠</label><span data-testid="discount">-¥0.00</span></div>
+    <div class="row"><label>应付</label><span class="total" data-testid="payable">¥100.00</span></div>
+  </div>
+
+  <div class="row" style="margin-top:18px;">
+    <button id="submit" data-testid="submit" type="button">提交订单</button>
+  </div>
+
+  <div class="message" data-testid="message" role="status" aria-live="polite"></div>
+  <div class="message" data-testid="order-id"></div>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>

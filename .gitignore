@@ -1,0 +1,23 @@
+# 运行时产物
+.ci-results/
+runs/
+artifacts/
+.pytest_cache/
+__pycache__/
+*.pyc
+.coverage
+coverage.xml
+htmlcov/
+junit*.xml
+
+# Playwright
+node_modules/
+playwright-report/
+test-results/
+.ms-playwright/
+
+# 编辑器与系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
