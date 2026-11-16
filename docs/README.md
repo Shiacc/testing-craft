@@ -44,6 +44,9 @@
 | 09 | [组织与治理](09-organization-and-governance.md) | 角色职责、用例资产治理、评审机制、平台运营、成熟度模型 | 管理者、平台负责人 |
 | 10 | [反模式与失败案例](10-anti-patterns.md) | 20 条高频反模式、症状、根因与修复路径 | 全员 |
 | 11 | [模板与检查表](11-templates-and-checklists.md) | 用例规范、评分表、平台 RFP、上线检查表、ADR 模板（可直接抄用） | 全员 |
+| 12 | [真实项目接入实战](12-real-project-playbook.md) | 用开源全栈项目练完整流程：选型标准、接入七步、真实踩坑与修法 | 工程师、QA 负责人 |
+| 13 | [用例库与缺陷联动](13-case-library-and-bug-integration.md) | 用例库字段/状态机/绑定校验、覆盖率口径、禅道与 Jira 字段映射、指纹去重 | QA 负责人、效能工程师 |
+| 14 | [Skill 开发](14-skill-development.md) | 把流程固化成 AI 可复用能力的标准、分层披露与校验 | 要把流程沉淀下来的人 |
 
 配套实验：[`labs/`](../labs/README.md) —— 6 个可运行实验，覆盖 pytest 单元测试、接口契约测试、Playwright E2E、性能阈值门禁、CI 编排、轻量测试平台原型。
 

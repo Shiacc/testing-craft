@@ -1,7 +1,9 @@
-# 运行时产物
+﻿# 运行时产物
 .ci-results/
 runs/
 artifacts/
+atf/runs/
+atf/state/
 .pytest_cache/
 __pycache__/
 *.pyc
@@ -9,6 +11,14 @@ __pycache__/
 coverage.xml
 htmlcov/
 junit*.xml
+
+# 被测项目（Lab 07）本地状态
+labs/07-real-project/app/db.sqlite3
+labs/07-real-project/app/db.sqlite3-journal
+labs/07-real-project/app/.seed_state.json
+labs/07-real-project/app/media/
+labs/07-real-project/app/staticfiles/
+labs/07-real-project/app/.env
 
 # Playwright
 node_modules/

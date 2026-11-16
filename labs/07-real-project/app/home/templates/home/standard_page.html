@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-standardpage{% endblock %}
+
+{% block content %}
+<article class="standard-page">
+  <h1 data-testid="page-title">{{ page.title }}</h1>
+
+  {% if page.intro %}
+    <p class="intro" data-testid="page-intro">{{ page.intro }}</p>
+  {% endif %}
+
+  <div class="body" data-testid="page-body">
+    {{ page.body|richtext }}
+  </div>
+
+  {% if page.get_children.live %}
+    <nav class="child-pages" data-testid="child-pages">
+      <h2>下级页面</h2>
+      <ul>
+        {% for child in page.get_children.live %}
+          <li><a href="{{ child.url }}" data-testid="child-link">{{ child.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  {% endif %}
+</article>
+{% endblock content %}

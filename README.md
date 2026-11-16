@@ -3,7 +3,7 @@
 > 一份可以直接拿去用的企业级测试知识体系 + 6 个可运行实验。
 > 回答三个问题：**要不要自动化、用什么工具、怎么在组织里跑起来。**
 
-[![docs](https://img.shields.io/badge/docs-11%20篇-2563eb)](docs/index.md)
+[![docs](https://img.shields.io/badge/docs-14%20篇-2563eb)](docs/index.md)
 [![labs](https://img.shields.io/badge/labs-6%20个-0f9d58)](labs/README.md)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](labs/requirements.txt)
 
@@ -18,8 +18,10 @@
         → 选型（加权评分 + TCO） → 落地（工程/CI/度量/治理） → 反模式
 ```
 
-- **`docs/`**：11 篇文档，从术语定义讲到组织治理，表格密集、结论可检验；入口是 [docs/index.md](docs/index.md)。
-- **`labs/`**：6 个实验，同一业务域（订单优惠计算）贯穿 L1→L5，从一条单元测试一路做到一个能出门禁的最小测试平台。
+- **`docs/`**：14 篇文档，从术语定义讲到组织治理，再到真实项目接入、用例库与缺陷联动、Skill 开发；入口是 [docs/index.md](docs/index.md)。
+- **`labs/`**：7 个实验。01-06 用同一业务域（订单优惠计算）贯穿 L1→L5，做到一个能出门禁的最小测试平台；07 换成**真实开源全栈项目**（Wagtail），跑通 L1→L4 并接入用例库与缺陷系统。
+- **`atf/`**：自动化测试框架层——用例库（YAML）+ 执行回写 + 失败→缺陷（禅道/Jira，含 mock 验证路径）。
+- **`skills/qa-full-cycle/`**：把整套流程封装成 AI 可复用的 Skill（骨架 + references + scripts，校验全 PASS）。
 
 两者严格对应：文档只给结论与最小片段，完整实现都在 labs，避免文档与代码双维护漂移。
 
@@ -48,13 +50,27 @@ python -m platform_lite run --tag smoke --parallel 4 --shards 2
 python -m platform_lite history
 ```
 
+**真实项目闭环（Lab 07 + atf）**：
+
+```powershell
+cd labs/07-real-project
+.\bootstrap.ps1                        # 装依赖 → 迁移 → 灌种子 → 建本地账号（幂等）
+cd app; python manage.py runserver 127.0.0.1:8099 --noreload   # 终端 A
+
+cd <repo>; python -m atf validate        # 用例库校验（绑定是否真实存在）
+python -m atf coverage                  # 覆盖率：分层 / 优先级
+python -m atf run --tag "not canary"    # 执行 + 回写用例库 + 出报告
+python -m atf run --tag canary --canary --dry-run   # 失败 → 缺陷草稿（不提交）
+python skills/qa-full-cycle/scripts/run_cycle.py --tag "not canary" --target-url http://127.0.0.1:8099
+```
+
 ---
 
 ## 目录
 
 ```
 testing-craft/
-├── docs/                     11 篇企业级文档
+├── docs/                     14 篇企业级文档
 │   ├── index.md              文档索引页（脚本生成：按问题/角色/小节查）
 │   ├── README.md             导读：核心结论速查、约定、变更记录
 │   ├── 01-concepts-and-terminology.md
@@ -67,14 +83,27 @@ testing-craft/
 │   ├── 08-metrics-and-quality-gates.md
 │   ├── 09-organization-and-governance.md
 │   ├── 10-anti-patterns.md
-│   └── 11-templates-and-checklists.md
-└── labs/                     6 个可运行实验
-    ├── 01-unit-pytest/       L1 单元测试：参数化、fixture、marker、覆盖率、缺陷回归
-    ├── 02-api-contract/      L3 接口与契约：错误码矩阵、幂等、状态机、OpenAPI 契约
-    ├── 03-ui-playwright/     L4 E2E：Page Object、data-testid、失败留证（截图 + trace）
-    ├── 04-perf/              L5 性能：阈值门禁（Python 冒烟 + k6 脚本）
-    ├── 05-ci/                流程层：分层/分片/并行/门禁 + Gitee Go / GitHub Actions
-    └── 06-platform-lite/     平台层：资产管理、调度、执行池、报告、门禁、趋势
+│   ├── 11-templates-and-checklists.md
+│   ├── 12-real-project-playbook.md          真实项目接入实战
+│   ├── 13-case-library-and-bug-integration.md 用例库与缺陷联动
+│   └── 14-skill-development.md              Skill 开发
+├── labs/                     7 个可运行实验
+│   ├── 01-unit-pytest/       L1 单元测试：参数化、fixture、marker、覆盖率、缺陷回归
+│   ├── 02-api-contract/      L3 接口与契约：错误码矩阵、幂等、状态机、OpenAPI 契约
+│   ├── 03-ui-playwright/     L4 E2E：Page Object、data-testid、失败留证（截图 + trace）
+│   ├── 04-perf/              L5 性能：阈值门禁（Python 冒烟 + k6 脚本）
+│   ├── 05-ci/                流程层：分层/分片/并行/门禁 + Gitee Go / GitHub Actions
+│   ├── 06-platform-lite/     平台层：资产管理、调度、执行池、报告、门禁、趋势
+│   └── 07-real-project/      **真实开源项目**：Wagtail 全栈 CMS，L1→L4 + 种子/清理/账号管理
+├── atf/                      框架层：用例库 + 执行回写 + 缺陷流（禅道/Jira + mock）
+│   ├── cases/cases.yaml      用例库（13 条，绑定真实测试 nodeid）
+│   ├── catalog.py            校验 / 覆盖率 / 孤儿检测
+│   ├── runner.py             执行 + 解析 JUnit + 回写
+│   ├── bugflow.py            失败 → BugDraft → 指纹去重 → 提交
+│   └── bugfiler/             禅道/Jira 适配器 + mock 服务
+├── skills/qa-full-cycle/     把流程做成 AI 可复用 Skill（校验 9 项全 PASS）
+├── scripts/build_docs_index.py  索引页生成器（--check 可进 CI）
+└── tests/bugfiler/           适配器单测（31 passed，对 mock 全链路）
 ```
 
 ---
@@ -103,15 +132,22 @@ testing-craft/
 | 04 性能 | `py_load_smoke.py` | p95 约 17-20ms / 200-270 req/s / 错误率 0%，门禁 PASS |
 | 05 CI 编排 | `ci_local.py --shards 2 --with-perf` | 73 用例全绿，墙面 6-12s，门禁 PASS |
 | 06 平台 | `platform_lite run --tag smoke` | 73 用例，4-6s，门禁 PASS，生成 HTML 报告与趋势 |
+| 07 真实项目 | `cd labs/07-real-project && pytest -q` | 13 passed / 1 skipped（canary），8.2s；被测系统为 Wagtail 6.4 全栈 CMS |
+| atf 用例库 | `python -m atf validate` / `coverage` | 13 条用例，0 error；自动化率 92%（12/13，L5 手工） |
+| atf 执行回写 | `python -m atf run --tag "not canary"` | pass 13 / fail 0，7.6s，用例库 last_run 已回写 |
+| 缺陷流（dry-run） | `atf run --tag canary --canary --dry-run` | 1 条真实失败 → would-file 草稿（含标题/严重级） |
+| 缺陷流（mock） | `atf file-bugs --tracker zentao` | 提单成功 #101；再次执行 → duplicate（指纹去重） |
+| 缺陷适配器单测 | `pytest tests/bugfiler -q` | 31 passed（禅道两种认证、Jira ADF、4xx、去重、脱敏） |
+| Skill 校验 | `validate_skill.py skills/qa-full-cycle` | 9 项全 PASS；`run_cycle.py` 实测退出码 0 |
 
-未在本机执行的只有 `labs/04-perf/k6/load_test.js`（未安装 k6 二进制），脚本按 k6 v0.50+ 语法编写，需自行 `k6 run` 验证。
+**未在本机执行的**：`labs/04-perf/k6/load_test.js`（未安装 k6 二进制）；**未接真实禅道/Jira 实例**（无凭据，端到端用 `atf/bugfiler/mock_server.py` 验证；真实接入前需先 GET 元数据核对字段，见 docs/13 §3）。
 
 ---
 
 ## 环境要求
 
 - Python **3.11+**（开发验证于 3.12）
-- 依赖：`pytest`、`pytest-cov`、`fastapi`、`uvicorn`、`httpx`、`playwright`、`pyyaml`
+- 依赖：`pytest`、`httpx`、`playwright`、`PyYAML`、`fastapi`、`uvicorn`（labs 01-06）；`wagtail`、`Django`（labs 07 真实项目）
 - 浏览器：Playwright 自带 chromium，未安装时自动回落到系统 Chrome / Edge（`PW_CHANNEL=msedge` 可强制）
 - 可选：`k6`（仅 04 实验的 k6 脚本需要）
 

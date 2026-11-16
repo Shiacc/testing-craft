@@ -1,0 +1,187 @@
+version: 1
+project: wagtail-demo
+description: '真实开源项目（Wagtail 6.4 / Django 5.2 全栈 CMS）的用例库。 每条用例都必须能追溯到"风险"或"功能点"，并绑定到一条真实存在的自动化测试。
+
+  '
+target:
+  name: Wagtail 演示站
+  base_url: http://127.0.0.1:8099
+  startup: cd labs/07-real-project && ./bootstrap.ps1 && python app/manage.py runserver 127.0.0.1:8099
+  accounts: 本地开发账号 qa / qa-pass-12345（仅本地 sqlite，不含任何生产凭据）
+cases:
+- id: L1-001
+  title: 种子计划包含两个一级页面
+  layer: L1
+  priority: P1
+  tags:
+  - seed
+  - smoke
+  requirement: 演示内容可复现
+  status: automated
+  automated_by: tests/test_l1_seed_plan.py::test_seed_plan_has_expected_top_level_pages
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L1-002
+  title: 指南下有三个 slug 唯一的子页面
+  layer: L1
+  priority: P2
+  tags:
+  - seed
+  requirement: 演示内容可复现
+  status: automated
+  automated_by: tests/test_l1_seed_plan.py::test_guide_has_three_children_with_unique_slugs
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L1-003
+  title: 每条种子页面都有非空标题与摘要
+  layer: L1
+  priority: P2
+  tags:
+  - seed
+  requirement: 内容可断言
+  status: automated
+  automated_by: tests/test_l1_seed_plan.py::test_every_page_has_title_and_intro_for_assertions
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-001
+  title: 首页可访问且返回标题
+  layer: L3
+  priority: P0
+  tags:
+  - smoke
+  - home
+  requirement: 站点可用性
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_home_returns_200_with_title
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-002
+  title: 种子页面渲染出预期主标题
+  layer: L3
+  priority: P0
+  tags:
+  - smoke
+  - content
+  requirement: 内容发布可验证
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_seeded_pages_render_expected_headings
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-003
+  title: 指南列表页挂出全部子页面链接
+  layer: L3
+  priority: P1
+  tags:
+  - navigation
+  requirement: 导航完整性
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_guide_lists_all_children
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-004
+  title: sitemap 覆盖已发布页面
+  layer: L3
+  priority: P1
+  tags:
+  - seo
+  requirement: 搜索引擎可发现性
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_sitemap_lists_seeded_pages
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-005
+  title: 管理后台登录页可访问
+  layer: L3
+  priority: P0
+  tags:
+  - smoke
+  - admin
+  requirement: 后台入口可用
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_admin_login_page_available
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-006
+  title: 首页引用的静态资源可加载
+  layer: L3
+  priority: P2
+  tags:
+  - assets
+  requirement: 样式可用
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_static_assets_served
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L3-901
+  title: 站点应提供 robots.txt
+  layer: L3
+  priority: P1
+  tags:
+  - seo
+  - canary
+  requirement: 爬虫抓取规则（当前缺失，演练用）
+  status: automated
+  automated_by: tests/test_l3_site_http.py::test_robots_txt_should_be_served
+  owner: team-quality
+  last_run: '2026-11-16 19:34:52'
+  last_result: fail
+  notes: 演练用负向用例，需 QA_RUN_CANARY=1 才执行；用于验证缺陷上报链路
+- id: L4-001
+  title: 管理员可登录后台
+  layer: L4
+  priority: P0
+  tags:
+  - smoke
+  - admin
+  requirement: 身份认证
+  status: automated
+  automated_by: tests/test_l4_admin_ui.py::test_admin_login_succeeds
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L4-002
+  title: 后台新建页面并发布后前台可见
+  layer: L4
+  priority: P0
+  tags:
+  - smoke
+  - publish
+  requirement: 发布链路（创建→发布→前台渲染）
+  status: automated
+  automated_by: tests/test_l4_admin_ui.py::test_create_and_publish_page_then_visible_on_site
+  owner: team-quality
+  last_run: '2026-11-16 19:40:17'
+  last_result: pass
+  notes: ''
+- id: L5-001
+  title: 首页首屏时延基线（人工抽测）
+  layer: L5
+  priority: P2
+  tags:
+  - perf
+  requirement: 首屏体验
+  status: manual
+  automated_by: ''
+  owner: team-quality
+  last_run: ''
+  last_result: ''
+  notes: 本地开发服务器不代表生产性能，暂不自动化；生产接入后再补 k6 脚本
