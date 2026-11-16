@@ -3,7 +3,7 @@
 > 一份可以直接拿去用的企业级测试知识体系 + 6 个可运行实验。
 > 回答三个问题：**要不要自动化、用什么工具、怎么在组织里跑起来。**
 
-[![docs](https://img.shields.io/badge/docs-11%20篇-2563eb)](docs/README.md)
+[![docs](https://img.shields.io/badge/docs-11%20篇-2563eb)](docs/index.md)
 [![labs](https://img.shields.io/badge/labs-6%20个-0f9d58)](labs/README.md)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](labs/requirements.txt)
 
@@ -18,7 +18,7 @@
         → 选型（加权评分 + TCO） → 落地（工程/CI/度量/治理） → 反模式
 ```
 
-- **`docs/`**：11 篇文档，从术语定义讲到组织治理，表格密集、结论可检验。
+- **`docs/`**：11 篇文档，从术语定义讲到组织治理，表格密集、结论可检验；入口是 [docs/index.md](docs/index.md)。
 - **`labs/`**：6 个实验，同一业务域（订单优惠计算）贯穿 L1→L5，从一条单元测试一路做到一个能出门禁的最小测试平台。
 
 两者严格对应：文档只给结论与最小片段，完整实现都在 labs，避免文档与代码双维护漂移。
@@ -55,7 +55,8 @@ python -m platform_lite history
 ```
 testing-craft/
 ├── docs/                     11 篇企业级文档
-│   ├── README.md             文档索引、阅读路径、核心结论速查
+│   ├── index.md              文档索引页（脚本生成：按问题/角色/小节查）
+│   ├── README.md             导读：核心结论速查、约定、变更记录
 │   ├── 01-concepts-and-terminology.md
 │   ├── 02-when-to-automate.md
 │   ├── 03-test-frameworks.md
