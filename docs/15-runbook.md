@@ -330,6 +330,20 @@ python -m atf coverage --project static-demo
 python scripts/gh_publish.py --token-file ..\.tmp\gh-token.txt --wait
 ```
 
+### 11.2 不想配 SSH 时：一次性 PAT 推送
+
+如果 SSH 公钥在你的 GitHub 上一直不生效，用这个脚本在**你自己的终端**里推一次即可
+（token 以掩码输入、只在内存活一次，不落盘、不进 `git config`、不进命令行历史）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\gh_push_once.ps1
+# 只看计划：-DryRun
+```
+
+它做的就是 `git push https://github.com/<repo>.git master:main`，鉴权走 `http.extraheader`。
+PAT 需要 `Contents: Read and write` + `Workflows: Read and write`（仓库含 `.github/workflows/`，缺后者会被拒）。
+推完 Actions 自动触发，地址：`https://github.com/<owner>/<repo>/actions`。
+
 脚本做的事与安全约定：
 
 - token 只从文件/环境变量读，打印时脱敏（`ghp_***（len=32）`）；
