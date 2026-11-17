@@ -310,6 +310,36 @@ python -m atf coverage --project static-demo
 | `.workflow/qa-e2e.yml` | Gitee Go | 字段随版本演进，**首次启用需在控制台对照模板校正后运行一次**（本地无法验证） |
 | `.github/workflows/qa-e2e.yml` | GitHub Actions | 标准语法；本地仅校验 YAML 可解析 |
 
+### 11.1 先上 GitHub（免费额度说明 + 三步接入）
+
+| 仓库可见性 | Actions 免费额度 | 本项目单次耗时 | 结论 |
+|---|---|---|---|
+| **public** | **不限量**（标准 runner） | 约 3-5 分钟（static + 两个项目 + repeat 3） | 推荐 |
+| private | 2000 分钟/月（Linux 1×） | 同上 | 够用但要盯配额 |
+
+接入三步（本仓库提供脚本，避免手点出错）：
+
+```powershell
+# 1) 准备 PAT（fine-grained，仅限本仓库）需要的权限：
+#    Contents: Read and write      —— 推送代码
+#    Workflows: Read and write     —— 提交/更新 .github/workflows
+#    Administration: Read and write —— 创建仓库（仓库已存在则不需要）
+# 2) 把 token 存成文件（不要贴进聊天、不要提交进仓库）
+#    例如保存到 <workspace>\.tmp\gh-token.txt
+# 3) 一条命令：建仓 → 推送 → 触发 Actions → 等待结果
+python scripts/gh_publish.py --token-file ..\.tmp\gh-token.txt --wait
+```
+
+脚本做的事与安全约定：
+
+- token 只从文件/环境变量读，打印时脱敏（`ghp_***（len=32）`）；
+- 推送用 `http.extraheader` 传凭据，**不写进 git remote URL**，结束后 remote 只留干净的 HTTPS 地址；
+- 建仓默认 **public**；`--private` 可切私有；
+- `--wait` 会轮询 Actions 并把结论（success/failure + run URL）打印出来，退出码 0/1；
+- `--dry-run` 只打印计划，不调 API、不推送（用于确认参数）。
+
+> 首次推送建议用 `--wait`：能当场看到 Actions 通过/失败，而不是过一会儿才发现 workflow 写错。
+
 两套都只调一条命令，编排逻辑留在内核：
 
 ```yaml

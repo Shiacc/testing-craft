@@ -10,6 +10,10 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch: {}   # 允许手工触发（首次接入 GitHub 时便于立即验证）
+
+permissions:
+  contents: read
 
 concurrency:
   group: qa-e2e-${{ github.ref }}
@@ -24,6 +28,7 @@ jobs:
   static:
     name: 静态检查
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,6 +48,7 @@ jobs:
     name: 端到端（两个项目）
     needs: static
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -70,6 +76,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
