@@ -305,6 +305,19 @@ python -m atf coverage --project static-demo
 
 本仓库已内置两份流水线文件（意图一致，便于跨平台迁移）：
 
+### 11.0 已验证的 GitHub 运行（2026-11-17）
+
+仓库：`git@github.com:Shiacc/testing-craft.git`（公开，Actions 免费不限量）
+运行：[run #1](https://github.com/Shiacc/testing-craft/actions/runs/44033131092) · **success** · 总耗时 3 分 32 秒
+
+| job | 步骤 | 结论 | 耗时 |
+|---|---|---|---|
+| 静态检查 | 装依赖 → 语法与配置校验（compileall + 两个项目 validate + 索引 check） | success | 24s |
+| 端到端（两个项目） | 装依赖与浏览器 → 项目 1（Wagtail 全栈）→ 项目 2（静态站点）→ 归档产物 | success | 60s |
+| 主干验收（连跑 3 次一致） | 一致性验收（`--repeat 3`） | success | 120s |
+
+> 这次运行的三个 job 全部 success，说明「一条命令 + 两个项目 + 连跑一致性」在干净 Linux runner 上可复现。
+
 | 文件 | 平台 | 说明 |
 |---|---|---|
 | `.workflow/qa-e2e.yml` | Gitee Go | 字段随版本演进，**首次启用需在控制台对照模板校正后运行一次**（本地无法验证） |

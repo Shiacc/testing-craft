@@ -4,6 +4,7 @@
 > 回答三个问题：**要不要自动化、用什么工具、怎么在组织里跑起来。**
 
 [![docs](https://img.shields.io/badge/docs-15%20篇-2563eb)](docs/index.md)
+[![qa-e2e](https://github.com/Shiacc/testing-craft/actions/workflows/qa-e2e.yml/badge.svg)](https://github.com/Shiacc/testing-craft/actions/workflows/qa-e2e.yml)
 [![labs](https://img.shields.io/badge/labs-6%20个-0f9d58)](labs/README.md)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](labs/requirements.txt)
 
