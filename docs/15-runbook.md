@@ -337,6 +337,61 @@ python -m atf coverage --project static-demo
 | 项目 2 独立 1.3s | 多项目复用只需换配置，启动开销极小 |
 | submit job `skipped` | push 事件不会向真实缺陷系统提单 |
 
+### 11.4 用 Docker 自建禅道：把"真实提单"这条链路验完（零外部账号）
+
+不用申请任何账号，本地起一个真禅道，就能把适配器从"对 mock 自说自话"升级成"真的建了单"。
+
+```powershell
+python scripts/zentao_local.py --reset       # 起容器 → 走安装向导 → 建管理员 → 建产品 → 打印变量
+```
+
+脚本会输出可直接使用的变量：
+
+```
+$env:ZENTAO_BASE_URL="http://127.0.0.1:8300"
+$env:ZENTAO_PRODUCT_ID="1"
+$env:ZENTAO_ACCOUNT="admin"
+$env:ZENTAO_PASSWORD="Zentao@2026"
+```
+
+然后两步验收：
+
+```powershell
+python -m atf tracker check --tracker zentao                 # 体检：token 可用 + 产品存在
+python -m atf e2e --project wagtail-demo --filing submit --tracker zentao   # 真实提单
+```
+
+**实测证据（2026-11-17，全新容器）**
+
+```
+[install] 配置已保存
+[install] 安装完成
+zentao   换取 token   OK    账号密码认证可用
+zentao   目标产品       OK    product_id=1 存在
+[filed] L3-901 zentao 1
+结论：通过（退出码 0）｜56.8s
+```
+
+用 API 复核这张单（`GET /api.php/v1/bugs/1`）：
+
+```
+id=1 | title=[L3] 站点应提供 robots.txt（L3-901） | severity=3 | pri=3
+status=active | product=1 | openedBy=admin
+```
+
+**四个安装坑（脚本已内置处理，手工装时同样会遇到）**
+
+| 坑 | 现象 | 处理 |
+|---|---|---|
+| `MYSQL_INTERNAL` 默认 false | Apache 一直 "Waiting MySQL"，约 64 秒后容器退出 | 启动时加 `-e MYSQL_INTERNAL=true` |
+| 残留数据表 | 弹窗"数据表已经存在，请返回前页清空数据" | 数据库步骤勾选「清空现有数据」 |
+| 配置页必须提交 | 跳过则后面的管理员保存无效，仍判定未安装 | 建表完成后先点配置页的「下一步」 |
+| 已安装判定 | 装完首次访问会 302 到 `upgrade/safeDelete` | 判定条件用"不再跳回 install.php"，不要用 200 |
+
+> **Jira 为什么没有同样处理**：官方镜像 `atlassian/jira-software` 安装时强制填授权码，
+> 没有可免费无人值守的 Server 版；所以 Jira 侧仍以 mock 全链路验证（请求体、ADF 描述、4xx 分支），
+> 拿到真实实例后再补 `--filing submit --tracker jira` 的真机记录。
+
 ### 11.1 先上 GitHub（免费额度说明 + 三步接入）
 
 | 仓库可见性 | Actions 免费额度 | 本项目单次耗时 | 结论 |

@@ -20,7 +20,7 @@ cases:
   status: automated
   automated_by: tests/test_l1_seed_plan.py::test_seed_plan_has_expected_top_level_pages
   owner: team-quality
-  last_run: '2026-11-17 11:49:33'
+  last_run: '2026-11-17 16:37:18'
   last_result: pass
   notes: ''
 - id: L1-002
@@ -33,7 +33,7 @@ cases:
   status: automated
   automated_by: tests/test_l1_seed_plan.py::test_guide_has_three_children_with_unique_slugs
   owner: team-quality
-  last_run: '2026-11-17 11:49:33'
+  last_run: '2026-11-17 16:37:18'
   last_result: pass
   notes: ''
 - id: L1-003
@@ -46,7 +46,7 @@ cases:
   status: automated
   automated_by: tests/test_l1_seed_plan.py::test_every_page_has_title_and_intro_for_assertions
   owner: team-quality
-  last_run: '2026-11-17 11:49:33'
+  last_run: '2026-11-17 16:37:18'
   last_result: pass
   notes: ''
 - id: L3-001
@@ -60,7 +60,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_home_returns_200_with_title
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-002
@@ -74,7 +74,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_seeded_pages_render_expected_headings
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-003
@@ -87,7 +87,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_guide_lists_all_children
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-004
@@ -100,7 +100,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_sitemap_lists_seeded_pages
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-005
@@ -114,7 +114,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_admin_login_page_available
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-006
@@ -127,7 +127,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_static_assets_served
   owner: team-quality
-  last_run: '2026-11-17 11:49:38'
+  last_run: '2026-11-17 16:37:25'
   last_result: pass
   notes: ''
 - id: L3-901
@@ -141,7 +141,7 @@ cases:
   status: automated
   automated_by: tests/test_l3_site_http.py::test_robots_txt_should_be_served
   owner: team-quality
-  last_run: '2026-11-17 11:49:52'
+  last_run: '2026-11-17 16:37:43'
   last_result: fail
   notes: 演练用负向用例，需 QA_RUN_CANARY=1 才执行；用于验证缺陷上报链路
 - id: L4-001
@@ -155,7 +155,7 @@ cases:
   status: automated
   automated_by: tests/test_l4_admin_ui.py::test_admin_login_succeeds
   owner: team-quality
-  last_run: '2026-11-17 11:49:47'
+  last_run: '2026-11-17 16:37:36'
   last_result: pass
   notes: ''
 - id: L4-002
@@ -169,7 +169,7 @@ cases:
   status: automated
   automated_by: tests/test_l4_admin_ui.py::test_create_and_publish_page_then_visible_on_site
   owner: team-quality
-  last_run: '2026-11-17 11:49:47'
+  last_run: '2026-11-17 16:37:36'
   last_result: pass
   notes: ''
 - id: L5-001
