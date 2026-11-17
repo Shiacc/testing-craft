@@ -305,27 +305,37 @@ python -m atf coverage --project static-demo
 
 本仓库已内置两份流水线文件（意图一致，便于跨平台迁移）：
 
-### 11.0 已验证的 GitHub 运行（2026-11-17）
+### 11.0 已验证的 GitHub 运行（2026-11-17，Linux runner 实测）
 
 仓库：`git@github.com:Shiacc/testing-craft.git`（公开，Actions 免费不限量）
 
-| run | 事件 | 结论 | 说明 |
-|---|---|---|---|
-| [#1](https://github.com/Shiacc/testing-craft/actions/runs/44033131092) | push | success | 3m32s：静态检查 24s / 端到端 60s / 主干验收 120s |
-| [#2](https://github.com/Shiacc/testing-craft/actions/runs/44033934873) | push | success | 文档与实证更新后复跑，仍全绿 |
-| [#3](https://github.com/Shiacc/testing-craft/actions/runs/44037708832) | push | success | 新增 check_links 与 `tracker check --mock` 后全绿 |
+现状：**run #1–#4 全部 success**，且每次 push 的 `submit` job 都是 `skipped`（闸门有效）。
 
-run #3 的四个 job 结论（关键证据）：
+以下是 run #4（`1af0552`）端到端 job 的**真实日志摘录**（Linux runner 比本机快，26s 跑完项目 1）：
 
-| job | 结论 |
+```
+项目 Wagtail 全栈 CMS（wagtail-demo）｜缺陷联动 mock/both｜重置 是
+  [PASS         ] l1      pass  3 fail  0    2.5s
+  [PASS         ] l3      pass  8 fail  0    2.6s
+  [PASS         ] l4      pass  2 fail  0    5.5s
+  [EXPECTED_FAIL] canary  pass  0 fail  1    2.3s
+  [filed] L3-901 zentao 101
+  [filed] L3-901 jira QA-1
+结论：通过（退出码 0）｜26.0s
+项目 静态站点（static-demo）｜缺陷联动 dry-run/both｜重置 是
+  [PASS         ] static  pass  3 fail  0    0.4s
+结论：通过（退出码 0）｜1.3s
+```
+
+关键点（都可对着日志逐条核对）：
+
+| 观察 | 含义 |
 |---|---|
-| 静态检查 | success（含 `scripts/check_links.py`、`atf tracker check --mock`） |
-| 端到端（两个项目） | success |
-| 主干验收（连跑 3 次一致） | success |
-| **真实提单（手工触发，需 Secrets）** | **skipped** ← 证明 push 事件不会真的提单 |
-
-> 三条证据合起来说明：① 一条命令 + 两个项目在干净 Linux runner 上可复现；
-> ② 连跑一致性成立；③ 真实提单的闸门有效（只有 `workflow_dispatch` 且 `real_submit != none` 才执行）。
+| l1 3 / l3 8 / l4 2 全 `PASS` | 三层用例在干净 Linux runner 上可复现 |
+| canary `EXPECTED_FAIL` | 演练用负向用例按预期失败，且**不计入**整体失败 |
+| `[filed] zentao 101` / `[filed] jira QA-1` | 缺陷流在 CI 里真实走了 mock 提交（两套适配器都通） |
+| 项目 2 独立 1.3s | 多项目复用只需换配置，启动开销极小 |
+| submit job `skipped` | push 事件不会向真实缺陷系统提单 |
 
 ### 11.1 先上 GitHub（免费额度说明 + 三步接入）
 

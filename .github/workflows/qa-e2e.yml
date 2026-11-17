@@ -15,6 +15,9 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  schedule:
+    # 每日巡检：UTC 01:00 = 北京时间 09:00。只想按需跑就删掉这三行。
+    - cron: "0 1 * * *"
   workflow_dispatch:
     inputs:
       real_submit:
