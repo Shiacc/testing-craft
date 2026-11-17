@@ -1,0 +1,83 @@
+# Gitee Go 流水线：QA 全流程
+#
+# 位置约定：Gitee Go 从仓库根的 `.workflow/` 目录读取流水线定义。
+# ⚠️ 字段随 Gitee Go 版本演进，本文件表达的是**流水线意图**；
+#    首次启用前请在 Gitee 控制台的「流水线」页面用模板对照校正字段名，
+#    再点「运行」验证一次（本仓库开发环境无法连接 Gitee Go，未做真机验证）。
+#
+# 设计要点：
+# 1. 只跑一条命令（python -m atf e2e），编排逻辑全部在内核里，YAML 保持薄；
+# 2. 用 --repeat 1 做 PR 门禁（快），用 --repeat 3 做主干验收（稳）；
+# 3. 产物（atf/e2e-runs/）必须归档，否则红灯时无从排障。
+
+version: "1.0"
+name: qa-e2e
+displayName: QA 全流程（重置 → 起服务 → 分层执行 → 缺陷 → 报告）
+
+triggers:
+  push:
+    branches:
+      include:
+        - master
+  pull_request:
+    branches:
+      include:
+        - master
+
+variables:
+  PYTHON_VERSION: "3.12"
+  PYTHONUTF8: "1"
+
+stages:
+  - stage:
+      name: static
+      displayName: 静态检查（秒级）
+      strategy: fast-fail
+    steps:
+      - step: run@shell
+        name: syntax
+        displayName: 语法与配置校验
+        script: |
+          python -m compileall -q atf labs/07-real-project/tests
+          python -m atf validate
+          python -m atf validate --project static-demo
+          python scripts/build_docs_index.py --check
+
+  - stage:
+      name: e2e
+      displayName: 端到端（两个项目）
+      dependsOn: [static]
+    steps:
+      - step: run@shell
+        name: wagtail
+        displayName: 项目 1（Wagtail 全栈）
+        script: |
+          python -m pip install -q -r labs/requirements.txt -r labs/07-real-project/requirements.txt
+          python -m playwright install chromium || echo "浏览器下载失败，将回落系统 Chrome/Edge"
+          python -m atf e2e --project wagtail-demo --filing mock --tracker both
+        artifacts:
+          - reports:
+              type: junit
+              path: atf/e2e-runs/wagtail-demo/*/junit-*.xml
+          - path: atf/e2e-runs/wagtail-demo/
+
+      - step: run@shell
+        name: static
+        displayName: 项目 2（静态站点，验证多项目复用）
+        script: |
+          python -m atf e2e --project static-demo
+        artifacts:
+          - path: atf/e2e-runs/static-demo/
+
+  - stage:
+      name: accept
+      displayName: 主干验收（连跑 3 次一致）
+      dependsOn: [e2e]
+      condition: |
+        return ${{ triggers.push.branch }} == 'master'
+    steps:
+      - step: run@shell
+        name: repeat
+        displayName: 一致性验收
+        script: |
+          python -m atf e2e --project wagtail-demo --filing dry-run --tracker both --repeat 3

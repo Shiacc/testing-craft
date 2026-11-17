@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# 项目 2：静态站点（labs/03-ui-playwright/web 的结算台）
+#
+# 存在的意义：证明「多项目复用」只需要换配置，不需要改内核代码。
+# 与 wagtail-demo 的差异全部体现在这份文件里：
+#   - 服务是标准库 http.server（无后端、无数据库）
+#   - 没有需要重置的状态（reset_files 为空）
+#   - 只有一层用例（static）
+#   - 缺陷流走 dry-run（这个项目没有演练用缺陷）
+# ---------------------------------------------------------------------------
+
+version: 1
+project: static-demo
+description: 静态结算台页面，零依赖服务，用于验证多项目复用
+
+server:
+  cwd: labs/03-ui-playwright/web
+  command: ["{python}", "-X", "utf8", "-m", "http.server", "{port}", "--bind", "{host}"]
+  host: 127.0.0.1
+  port: 8100
+  ready_path: /index.html
+  ready_timeout_s: 30
+  ready_interval_s: 0.5
+  log_file: server.log
+
+setup:
+  reset_files: []
+  commands: []
+
+suites_cwd: tests/static-demo
+
+suites:
+  - id: static
+    name: 静态页面契约（HTTP）
+    marker: static
+    required: true
+
+filing:
+  mode: dry-run
+  tracker: both
+
+artifacts:
+  dir: atf/e2e-runs
+  keep_junit: true
+  write_markdown: true
+
+timeouts:
+  suite_s: 120
+  setup_s: 60
+  total_s: 600

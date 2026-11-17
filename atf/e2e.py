@@ -347,13 +347,15 @@ def _reset_environment(cfg: E2EConfig, run_dir: Path, disable: bool) -> None:
         log.close()
 
 
-def _run_suite(cfg: E2EConfig, suite: dict, run_dir: Path, catalog: Catalog) -> SuiteOutcome:
+def _run_suite(
+    cfg: E2EConfig, suite: dict, run_dir: Path, catalog: Catalog, suites_cwd: Path, base_url: str
+) -> SuiteOutcome:
     suite_id = str(suite["id"])
     marker = str(suite.get("marker", ""))
     junit_path = run_dir / f"junit-{suite_id}.xml"
     stdout_path = run_dir / f"console-{suite_id}.log"
 
-    env = dict(os.environ, PYTHONUTF8="1")
+    env = dict(os.environ, PYTHONUTF8="1", QA_BASE_URL=base_url)
     env.update({str(k): str(v) for k, v in (suite.get("env") or {}).items()})
 
     cmd = [_python(), "-X", "utf8", "-m", "pytest", "-q", f"--junitxml={junit_path}"]
@@ -363,7 +365,7 @@ def _run_suite(cfg: E2EConfig, suite: dict, run_dir: Path, catalog: Catalog) -> 
     started = time.perf_counter()
     proc = subprocess.run(
         cmd,
-        cwd=cfg.resolve(str(cfg.raw.get("suites_cwd", "labs/07-real-project"))),
+        cwd=suites_cwd,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -453,10 +455,21 @@ def _filing(cfg: E2EConfig, summary: RunSummary, catalog: Catalog, mode: str, tr
     raise ValueError(f"未知 filing.mode：{mode}")
 
 
-def run_once(cfg: E2EConfig, *, mode: str, tracker: str, port: int | None = None, keep_server: bool = False, reset: bool = True) -> RunSummary:
-    catalog = Catalog.load()
+def run_once(
+    cfg: E2EConfig,
+    *,
+    mode: str,
+    tracker: str,
+    project=None,
+    port: int | None = None,
+    keep_server: bool = False,
+    reset: bool = True,
+) -> RunSummary:
+    cases_path = project.cases if project else None
+    suites_cwd = project.suites_cwd if project else ROOT / str(cfg.raw.get("suites_cwd", "labs/07-real-project"))
+    catalog = Catalog.load(cases_path, lab_dir=suites_cwd)
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    run_dir = cfg.artifacts_dir / run_id
+    run_dir = cfg.artifacts_dir / (project.id if project else cfg.project) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
     summary = RunSummary(run_id=run_id, started_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), run_dir=str(run_dir.relative_to(ROOT).as_posix()))
@@ -478,7 +491,7 @@ def run_once(cfg: E2EConfig, *, mode: str, tracker: str, port: int | None = None
         server.wait_ready()
 
         for suite in cfg.suites:
-            outcome = _run_suite(cfg, suite, run_dir, catalog)
+            outcome = _run_suite(cfg, suite, run_dir, catalog, suites_cwd, server.base_url)
             summary.suites.append(outcome)
             print(
                 f"  [{outcome.status:<13}] {outcome.id:<7} pass {outcome.counts.get('pass', 0):>2} "
@@ -592,7 +605,8 @@ def _write_artifacts(cfg: E2EConfig, summary: RunSummary, run_dir: Path) -> None
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="atf e2e", description="端到端：重置 → 起服务 → 分层执行 → 归因 → 缺陷 → 报告")
-    parser.add_argument("--config", default=None, help="流程配置路径（默认 atf/config/e2e.yaml）")
+    parser.add_argument("--project", default=None, help="项目 ID（见 atf/projects.yaml，默认取 default）")
+    parser.add_argument("--config", default=None, help="流程配置路径（覆盖项目登记：默认取项目的 config）")
     parser.add_argument("--filing", default=None, choices=["dry-run", "mock", "submit"], help="缺陷联动方式")
     parser.add_argument("--tracker", default=None, choices=["zentao", "jira", "both"], help="缺陷系统")
     parser.add_argument("--port", type=int, default=None, help="覆盖被测服务端口")
@@ -605,7 +619,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        cfg = E2EConfig.load(Path(args.config) if args.config else None)
+        from . import project as project_mod
+
+        registry = project_mod.load()
+        project = registry.get(args.project)
+        cfg = E2EConfig.load(Path(args.config) if args.config else project.config)
     except Exception as exc:  # noqa: BLE001
         print(f"[配置错误] {exc}")
         return 2
@@ -618,11 +636,15 @@ def main(argv: list[str] | None = None) -> int:
     for index in range(1, max(1, args.repeat) + 1):
         if args.repeat > 1:
             print(f"\n===== 第 {index}/{args.repeat} 次运行 =====")
-        print(f"项目 {cfg.project}｜缺陷联动 {mode}/{tracker}｜重置 {'否' if args.no_reset else '是'}")
+        print(
+            f"项目 {project.name}（{project.id}）｜缺陷联动 {mode}/{tracker}｜"
+            f"重置 {'否' if args.no_reset else '是'}"
+        )
         summary = run_once(
             cfg,
             mode=mode,
             tracker=tracker,
+            project=project,
             port=args.port,
             keep_server=args.keep_server,
             reset=not args.no_reset,

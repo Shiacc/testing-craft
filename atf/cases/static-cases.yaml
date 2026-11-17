@@ -1,0 +1,50 @@
+version: 1
+project: static-demo
+description: 静态结算台页面（labs/03 的 web 目录），零依赖、无状态，用于验证多项目复用
+target:
+  name: 静态结算台
+  base_url: http://127.0.0.1:8100
+  startup: python -m atf e2e --project static-demo（内核会自动起 http.server）
+  accounts: 无需账号
+cases:
+- id: S3-001
+  title: 首页返回 HTML 且标题为结算台
+  layer: L3
+  priority: P0
+  tags:
+  - static
+  - smoke
+  requirement: 页面可访问
+  status: automated
+  automated_by: test_static_site.py::test_home_returns_html_with_title
+  owner: team-quality
+  last_run: '2026-11-17 11:51:33'
+  last_result: pass
+  notes: ''
+- id: S3-002
+  title: 关键交互元素齐全（qty/level/coupon/submit/payable）
+  layer: L3
+  priority: P0
+  tags:
+  - static
+  requirement: 前后端共用的 data-testid 契约
+  status: automated
+  automated_by: test_static_site.py::test_key_elements_present
+  owner: team-quality
+  last_run: '2026-11-17 11:51:33'
+  last_result: pass
+  notes: ''
+- id: S3-003
+  title: 页面引用的 JS 资源可加载
+  layer: L3
+  priority: P1
+  tags:
+  - static
+  - assets
+  requirement: 交互脚本可用
+  status: automated
+  automated_by: test_static_site.py::test_static_assets_served
+  owner: team-quality
+  last_run: '2026-11-17 11:51:33'
+  last_result: pass
+  notes: ''

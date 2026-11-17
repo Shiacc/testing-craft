@@ -1,0 +1,26 @@
+version: 1
+
+# 项目登记表：一个项目 = 一份流程配置 + 一份用例库 + 一个测试目录
+#
+# 命令默认作用于 default 项目；用 `--project <id>` 切换：
+#   python -m atf e2e --project static-demo
+#   python -m atf validate --project static-demo
+#
+# 新增项目照抄一段即可（详细步骤见 docs/15-runbook.md §8）。
+
+default: wagtail-demo
+
+projects:
+  wagtail-demo:
+    name: Wagtail 全栈 CMS（真实开源项目）
+    description: 服务端渲染 + 后台 SPA，覆盖 L1→L4，含演练用负向用例与缺陷联动
+    config: atf/config/e2e.yaml
+    cases: atf/cases/cases.yaml
+    suites_cwd: labs/07-real-project
+
+  static-demo:
+    name: 静态站点（结算台）
+    description: 无后端、无状态的最小站点，用于验证"多项目复用"只需改配置
+    config: atf/config/e2e-static.yaml
+    cases: atf/cases/static-cases.yaml
+    suites_cwd: tests/static-demo

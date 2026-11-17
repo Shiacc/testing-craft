@@ -67,9 +67,11 @@ python skills/qa-full-cycle/scripts/run_cycle.py --tag "not canary" --target-url
 **一条命令跑完整个流程**（重置 → 起服务 → 分层执行 → 归因 → 缺陷 → 报告）：
 
 ```powershell
-.\scripts\run_e2e.ps1                 # mock 缺陷流（禅道 + Jira 都走一遍）
+.\scripts\run_e2e.ps1                 # 项目 1：mock 缺陷流（禅道 + Jira 都走一遍）
 .\scripts\run_e2e.ps1 -Repeat 3        # 验收：连跑 3 次并对比一致性
-python -m atf e2e --filing dry-run      # 只预览将提交什么
+python -m atf e2e --project static-demo # 项目 2：静态站点（3 秒，验证多项目复用）
+python -m atf e2e --filing dry-run       # 只预览将提交什么
+python -m atf tracker check --mock      # 缺陷系统体检（真实提交前必做）
 ```
 
 配置项、验收标准、故障排查、换项目清单见 [docs/15-runbook.md](docs/15-runbook.md)。
@@ -107,6 +109,12 @@ testing-craft/
 │   ├── 06-platform-lite/     平台层：资产管理、调度、执行池、报告、门禁、趋势
 │   └── 07-real-project/      **真实开源项目**：Wagtail 全栈 CMS，L1→L4 + 种子/清理/账号管理
 ├── atf/                      框架层：用例库 + 执行回写 + 缺陷流（禅道/Jira + mock）
+│   ├── projects.yaml         项目登记表（wagtail-demo / static-demo）
+│   ├── project.py            多项目解析（config / cases / suites_cwd）
+│   ├── e2e.py                端到端内核（重置→起服务→执行→归因→缺陷→报告）
+│   ├── tracker.py            缺陷系统体检（真实提交前 GET 元数据）
+│   ├── config/e2e.yaml       项目 1 的流程配置
+│   ├── config/e2e-static.yaml 项目 2 的流程配置（对照用）
 │   ├── cases/cases.yaml      用例库（13 条，绑定真实测试 nodeid）
 │   ├── catalog.py            校验 / 覆盖率 / 孤儿检测
 │   ├── runner.py             执行 + 解析 JUnit + 回写
@@ -116,7 +124,11 @@ testing-craft/
 ├── scripts/
 │   ├── build_docs_index.py   索引页生成器（--check 可进 CI）
 │   └── run_e2e.ps1           一键跑完整流程（薄包装，逻辑在 python -m atf e2e）
-└── tests/bugfiler/           适配器单测（31 passed，对 mock 全链路）
+├── .workflow/qa-e2e.yml      Gitee Go 流水线（需控制台启用并校正字段）
+├── .github/workflows/qa-e2e.yml  GitHub Actions 等价实现
+├── tests/
+│   ├── bugfiler/             适配器单测（31 passed，对 mock 全链路）
+│   └── static-demo/          项目 2 的测试（3 条 HTTP 契约，验证多项目复用）
 ```
 
 ---

@@ -98,6 +98,36 @@ ROUTES = {
 }
 
 
+# 元数据端点（GET）：供 `python -m atf tracker check` 在真实接入前核对字段/项目是否可用。
+# 真实系统里这些是"提交前必须 GET 一次"的接口，mock 必须能回放它们的形状。
+def _zen_products(cfg: "MockConfig", entry: dict) -> tuple[int, dict]:
+    return 200, {
+        "products": [{"id": 1, "name": "QA Mock Product", "status": "normal"}],
+        "total": 1,
+    }
+
+
+def _jira_project(cfg: "MockConfig", entry: dict) -> tuple[int, dict]:
+    return 200, {"id": "10000", "key": cfg.jira_key, "name": "QA 演练项目", "projectTypeKey": "software"}
+
+
+def _jira_createmeta(cfg: "MockConfig", entry: dict) -> tuple[int, dict]:
+    return 200, {
+        "projects": [
+            {
+                "key": cfg.jira_key,
+                "issuetypes": [{"name": "Bug", "subtask": False}, {"name": "Task", "subtask": False}],
+            }
+        ]
+    }
+
+
+GET_ROUTES = {
+    "/api.php/v1/products": _zen_products,
+    "/rest/api/3/issue/createmeta": _jira_createmeta,
+}
+
+
 # ---------------------------------------------------------------- HTTP handler
 
 
@@ -196,6 +226,18 @@ class _MockHandler(BaseHTTPRequestHandler):
             # 调试端点：手工起 mock 后可以直接看"客户端到底发了什么"。
             with self.config.lock:
                 self._send(200, {"count": len(self.config.records), "records": list(self.config.records)})
+            return
+        # 元数据端点：按路径前缀匹配（Jira 的项目路径带 key）
+        getter = GET_ROUTES.get(path)
+        if getter is None and path.startswith("/rest/api/3/project/"):
+            getter = _jira_project
+        if getter is not None:
+            try:
+                status, payload = getter(self.config, {})
+            except Exception as exc:  # noqa: BLE001
+                self._send(500, {"error": f"{type(exc).__name__}: {exc}"})
+                return
+            self._send(status, payload)
             return
         self._send(404, {"error": "未实现的端点", "path": path})
 

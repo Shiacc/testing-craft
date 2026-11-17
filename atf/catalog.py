@@ -68,13 +68,15 @@ class Catalog:
     data: dict
     cases: list[Case]
     path: Path = CASES_PATH
+    # 测试代码所在目录：多项目时由 atf/project.py 传入，用于校验 automated_by 是否真实存在
+    lab_dir: Path = LAB_DIR
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "Catalog":
+    def load(cls, path: Path | None = None, lab_dir: Path | None = None) -> "Catalog":
         target = path or CASES_PATH
         raw = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
         cases = [Case(**{k: v for k, v in item.items() if k in Case.__dataclass_fields__}) for item in raw.get("cases", [])]
-        return cls(data=raw, cases=cases, path=target)
+        return cls(data=raw, cases=cases, path=target, lab_dir=lab_dir or LAB_DIR)
 
     def save(self) -> None:
         self.data["cases"] = [case.to_dict() for case in self.cases]
@@ -118,10 +120,10 @@ class Catalog:
                 errors.append(f"{case.id}: status=automated 但未绑定 automated_by")
             if case.status != "automated" and case.automated_by:
                 errors.append(f"{case.id}: status={case.status} 不应有 automated_by")
-            if case.automated_by and not case.automated_by.startswith("tests/"):
-                warnings.append(f"{case.id}: automated_by 建议使用 labs 内相对路径（tests/...）")
+            if case.automated_by and "::" not in case.automated_by:
+                warnings.append(f"{case.id}: automated_by 应形如 <相对路径>::<测试函数名>")
 
-        collected = collect_tests()
+        collected = collect_tests(self.lab_dir)
         if collected:
             for case in self.cases:
                 if case.status == "automated" and case.automated_by:
@@ -139,7 +141,7 @@ class Catalog:
     # ------------------------------------------------------------ 覆盖率
 
     def coverage(self) -> dict:
-        collected = collect_tests()
+        collected = collect_tests(self.lab_dir)
         bound = {_normalize(case.automated_by) for case in self.cases if case.automated_by}
 
         def _stat(group: list[Case]) -> dict:

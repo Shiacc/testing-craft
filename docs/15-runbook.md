@@ -163,9 +163,60 @@ cd labs/07-real-project
 python -m pytest -q -m l3
 ```
 
+### 5.1 缺陷系统体检（真实提交前必做）
+
+提交前先用**只读**请求确认：项目存在吗？产品存在吗？`Bug` 类型可用吗？
+
+```powershell
+python -m atf tracker check --tracker both            # 用环境变量里的真实凭据
+python -m atf tracker check --tracker both --mock     # 起本地 mock，验证体检逻辑本身
+```
+
+- 通过：三行全 `OK`，退出码 `0`，此时才值得试 `--filing submit`；
+- 未通过：退出码 `3`，并直接告诉你缺哪些环境变量或哪个项目/产品不存在。
+
+> 为什么必须先 GET：禅道/Jira 的字段名、必填项、枚举值随版本与实例配置变化。
+> 直接 POST 的代价是"提单 400，才发现项目 key 拼错"。
+
 ---
 
-## 6. 产物清单
+## 6. 多项目：一套内核，多个项目
+
+登记表：`atf/projects.yaml`
+
+```yaml
+default: wagtail-demo
+projects:
+  wagtail-demo:
+    config: atf/config/e2e.yaml
+    cases: atf/cases/cases.yaml
+    suites_cwd: labs/07-real-project
+  static-demo:
+    config: atf/config/e2e-static.yaml
+    cases: atf/cases/static-cases.yaml
+    suites_cwd: tests/static-demo
+```
+
+```powershell
+python -m atf e2e --project static-demo     # 跑第二个项目（3s，静态站点）
+python -m atf validate --project static-demo
+python -m atf coverage --project static-demo
+```
+
+三个约定（照做即可，不需要改内核）：
+
+| 约定 | 说明 |
+|---|---|
+| `suites_cwd` 是**相对路径基准** | 用例库里的 `automated_by` 写"相对该目录"的 nodeid；`collect_tests` 也在该目录执行 |
+| 产物按项目分目录 | `atf/e2e-runs/<project>/<run_id>/`，两个项目互不覆盖 |
+| 项目间不共享用例库 | 每个项目一份 `cases.yaml`，覆盖率各算各的 |
+
+本项目已内置两个项目作为对照：`wagtail-demo`（真实全栈，4 层 + 缺陷联动）与 `static-demo`
+（静态站点，1 层 + dry-run）。后者证明"新增项目 = 加配置 + 加测试目录"。
+
+---
+
+## 7. 产物清单
 
 `atf/e2e-runs/<run_id>/`：
 
@@ -181,7 +232,7 @@ python -m pytest -q -m l3
 
 ---
 
-## 7. 验收标准（"一次性完整跑通"的定义）
+## 8. 验收标准（"一次性完整跑通"的定义）
 
 不是"我跑了一次没报错"，而是这四条同时成立：
 
@@ -197,7 +248,7 @@ python -m pytest -q -m l3
 
 ---
 
-## 8. 换一个项目怎么复用
+## 9. 换一个项目怎么复用
 
 这套流程对"任何能在本机起服务的项目"都适用，改动点固定为 6 处：
 
@@ -221,7 +272,7 @@ python -m pytest -q -m l3
 
 ---
 
-## 9. 故障排查
+## 10. 故障排查
 
 | 症状 | 原因 | 处理 |
 |---|---|---|
@@ -229,7 +280,8 @@ python -m pytest -q -m l3
 | 服务启动即退出 | 依赖缺失/迁移未跑/配置错 | 看 `server.log` 与 `setup.log` 末尾 |
 | 就绪超时但进程还活着 | 就绪路径本身 500 | 手工 `curl` 该路径确认；必要时换 `ready_path` |
 | 全部用例连接失败 | `QA_BASE_URL` 与实际端口不一致 | 检查 `server.port` 与 `--port` |
-| `atf validate` 报"绑定的测试不存在" | 改了测试函数名/路径 | 同步 `automated_by`（这是设计上的保护，不要绕过） |
+| `atf validate` 报"绑定的测试不存在" | 改了测试函数名/路径，或 `suites_cwd` 写错 | 同步 `automated_by`（相对 `suites_cwd`）；这是设计上的保护，不要绕过 |
+| 换项目后所有用例 0 条 | marker 与测试里的 `pytestmark` 不一致 | 用 `pytest --collect-only -q -m <marker>` 自查 |
 | `submit` 模式退出码 3 | 凭据缺失 | 按 §4 配环境变量；缺凭据是**拒绝执行**，不是失败 |
 | 多次运行结果不一致（`--repeat` 失败） | 数据残留 / 端口/账号共享 / 断言含时间或随机 | 用 `reset_files` 覆盖干净；断言去掉时间戳；看 `setup.log` 是否每次一致 |
 | 中文乱码 | 控制台编码 | 脚本已设 `PYTHONUTF8=1`；手工跑时加 `-X utf8` |
@@ -240,7 +292,7 @@ python -m pytest -q -m l3
 
 ---
 
-## 10. CI 集成
+## 11. CI 集成
 
 退出码语义（可直接作为流水线判据）：
 
@@ -251,28 +303,30 @@ python -m pytest -q -m l3
 | `2` | 配置错误（e2e.yaml 缺字段等） | 阻断，修配置（不要重试） |
 | `3` | 环境/凭据未就绪（端口占用、缺凭据、服务起不来） | 阻断，通知环境负责人 |
 
-Gitee Go / GitHub Actions 片段：
+本仓库已内置两份流水线文件（意图一致，便于跨平台迁移）：
+
+| 文件 | 平台 | 说明 |
+|---|---|---|
+| `.workflow/qa-e2e.yml` | Gitee Go | 字段随版本演进，**首次启用需在控制台对照模板校正后运行一次**（本地无法验证） |
+| `.github/workflows/qa-e2e.yml` | GitHub Actions | 标准语法；本地仅校验 YAML 可解析 |
+
+两套都只调一条命令，编排逻辑留在内核：
 
 ```yaml
-- name: 自动化全流程
-  run: |
-    python -m pip install -r labs/requirements.txt -r labs/07-real-project/requirements.txt
-    python -m atf e2e --filing mock --tracker both --repeat 3
-  env:
-    PYTHONUTF8: "1"
-- name: 归档产物
-  if: always()
-  uses: actions/upload-artifact@v4
-  with:
-    name: e2e-runs
-    path: atf/e2e-runs/
+# PR 门禁：快（单次）
+- run: python -m atf e2e --project wagtail-demo --filing mock --tracker both
+- run: python -m atf e2e --project static-demo
+# 主干验收：连跑 3 次一致
+- run: python -m atf e2e --project wagtail-demo --filing dry-run --tracker both --repeat 3
 ```
+
+> 真实缺陷系统只在发布前用 `--filing submit`（先跑 `atf tracker check`）；日常 PR 用 `mock`/`dry-run`。
 
 > 真实缺陷系统只在发布前用 `--filing submit`；日常 PR 用 `mock` 或 `dry-run`，避免噪声。
 
 ---
 
-## 11. 常见误用
+## 12. 常见误用
 
 | 误用 | 后果 | 正确做法 |
 |---|---|---|
@@ -284,7 +338,7 @@ Gitee Go / GitHub Actions 片段：
 
 ---
 
-## 12. 相关文档与技能
+## 13. 相关文档与技能
 
 | 目标 | 看哪里 |
 |---|---|
