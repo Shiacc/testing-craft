@@ -22,7 +22,10 @@ from atf.bugfiler.zentao import ZenTaoClient
 from atf.catalog import ROOT, Catalog
 from atf.runner import RunResult
 
-STATE_PATH = ROOT / "atf" / "state" / "filed_bugs.json"
+# 去重表位置：默认 atf/state/filed_bugs.json；
+# 设置 ATF_STATE_DIR 可让每次验收用独立目录（互不干扰，便于演示"每次都真的提一单"）
+_STATE_DIR = Path(os.environ.get("ATF_STATE_DIR", "")) if os.environ.get("ATF_STATE_DIR") else None
+STATE_PATH = (_STATE_DIR / "filed_bugs.json") if _STATE_DIR else (ROOT / "atf" / "state" / "filed_bugs.json")
 
 SEVERITY_BY_PRIORITY = {"P0": "严重", "P1": "一般", "P2": "轻微"}
 JIRA_PRIORITY = {"P0": 1, "P1": 3, "P2": 4}

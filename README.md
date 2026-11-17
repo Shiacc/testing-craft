@@ -73,6 +73,10 @@ python skills/qa-full-cycle/scripts/run_cycle.py --tag "not canary" --target-url
 python -m atf e2e --project static-demo # 项目 2：静态站点（3 秒，验证多项目复用）
 python -m atf e2e --filing dry-run       # 只预览将提交什么
 python -m atf tracker check --mock      # 缺陷系统体检（真实提交前必做）
+
+# 本地完整验收（含 Docker 自建禅道 + 真实提单）
+python scripts/zentao_local.py --reset  # 起一个真禅道（零外部账号）
+python scripts/acceptance.py            # 体检 → 全流程 → 真实提单 → 复核缺陷单
 ```
 
 配置项、验收标准、故障排查、换项目清单见 [docs/15-runbook.md](docs/15-runbook.md)。

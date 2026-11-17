@@ -52,6 +52,28 @@ cd <repo>
 .\scripts\run_e2e.ps1                                   # 默认 mock：禅道 + Jira 都真实走一遍
 ```
 
+**本地完整验收（含真实禅道提单）——一条命令：**
+
+```powershell
+python scripts/acceptance.py            # 复用已装的本地禅道：体检 → 全流程 → 真实提单 → 复核缺陷单
+python scripts/acceptance.py --fresh    # 从零重建容器再验（约 5 分钟）
+python scripts/acceptance.py --no-submit # 只跑到 mock，不碰真实系统
+```
+
+实测输出（2026-11-17，61.3s）：
+
+```
+=== 2/5 缺陷系统体检 ===
+  zentao   换取 token   OK    账号密码认证可用
+  zentao   目标产品       OK    product_id=1 存在
+=== 3/5 端到端 → 真实提单 ===
+  [PASS] l1 3 / l3 8 / l4 2 / canary EXPECTED_FAIL
+  [filed] L3-901 zentao 2
+=== 4/5 复核缺陷单 ===
+  #2 [L3] 站点应提供 robots.txt（L3-901）  severity=3 pri=3 status=active
+  产品缺陷总数：2
+```
+
 等价的内核命令（CI / Linux 用这个）：
 
 ```bash
