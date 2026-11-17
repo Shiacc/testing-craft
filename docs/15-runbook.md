@@ -392,6 +392,30 @@ status=active | product=1 | openedBy=admin
 > 没有可免费无人值守的 Server 版；所以 Jira 侧仍以 mock 全链路验证（请求体、ADF 描述、4xx 分支），
 > 拿到真实实例后再补 `--filing submit --tracker jira` 的真机记录。
 
+### 11.5 CI 里能不能真提单？先解决"localhost 不通"
+
+GitHub 的云端 runner 在公网，**它看到的 `127.0.0.1:8300` 是 runner 自己**，不是你的机器。
+所以"把 `ZENTAO_*` 配成 Secrets"只解决了"变量从哪来"，没解决"地址从哪来"。三条路：
+
+| 方案 | 做法 | 代价 | 适用 |
+|---|---|---|---|
+| **A. 本地跑**（推荐） | 发布前在开发机执行 `python -m atf e2e --filing submit --tracker zentao` | 不能无人值守 | 日常发版前手工验收 |
+| **B. self-hosted runner** | 在装有 Docker 禅道的机器上注册 runner，job 用 `runs-on: [self-hosted, Windows, X64]` | 要维护 runner | 想让 CI 也能真提单，且服务在内网 |
+| **C. 内网穿透** | 用 frp/cloudflared 把禅道暴露到公网，Secret 填公网 URL | **把缺陷系统挂到公网，安全风险高** | 不推荐 |
+
+本仓库已把 **B** 做成可选 job（默认关闭）：
+
+1. 在仓库 Settings → Secrets 配置：`ZENTAO_BASE_URL`（如 `http://127.0.0.1:8300`）、
+   `ZENTAO_PRODUCT_ID`、`ZENTAO_ACCOUNT`、`ZENTAO_PASSWORD`（或用 `ZENTAO_TOKEN`）；
+2. 在 Settings → Variables 建 `SELF_HOSTED_SUBMIT = true`；
+3. 在装有禅道的机器上注册 self-hosted runner（含 `Windows`、`X64` 标签）；
+4. Actions → qa-e2e → Run workflow → `real_submit=zentao` → 会跑 `submit-local` job。
+
+没做 2 的话，这个 job 连排队都不会发生（`if` 条件直接 false），不会浪费额度。
+
+> 云端 runner 上仍然只跑 mock：`submit` job 的 `if` 限定 `workflow_dispatch` 且 `real_submit != none`，
+> push/PR 永远不会碰真实缺陷系统。
+
 ### 11.1 先上 GitHub（免费额度说明 + 三步接入）
 
 | 仓库可见性 | Actions 免费额度 | 本项目单次耗时 | 结论 |
