@@ -377,6 +377,36 @@ PAT 需要 `Contents: Read and write` + `Workflows: Read and write`（仓库含 
 - run: python -m atf e2e --project wagtail-demo --filing dry-run --tracker both --repeat 3
 ```
 
+### 11.3 在 CI 里真实提单（GitHub Secrets + 手工触发）
+
+日常 push/PR **只跑 mock 与 dry-run**，真实提单只允许手工触发，避免把缺陷系统写成噪音源。
+
+**第一步：配 Secrets**（仓库 Settings → Secrets and variables → Actions）
+
+| Secret | 用于 | 示例 |
+|---|---|---|
+| `ZENTAO_BASE_URL` | 禅道地址 | `https://zentao.example.com` |
+| `ZENTAO_PRODUCT_ID` | 目标产品 ID | `12` |
+| `ZENTAO_TOKEN` | 禅道 Token（或改用 `ZENTAO_ACCOUNT`/`ZENTAO_PASSWORD`） | `xxxx` |
+| `JIRA_BASE_URL` | Jira 地址 | `https://yourco.atlassian.net` |
+| `JIRA_EMAIL` | 提单账号邮箱 | `qa@example.com` |
+| `JIRA_API_TOKEN` | Jira API Token | `xxxx` |
+| `JIRA_PROJECT_KEY` | 项目 Key | `QA` |
+
+**第二步：手工触发**（Actions → qa-e2e → Run workflow）
+
+`real_submit` 选项：`none`（默认，只跑 mock）/ `both` / `zentao` / `jira`。选非 `none` 时才会执行 `submit` job：
+
+1. `atf tracker check --tracker <选择>` —— 缺 Secrets 或字段不匹配就在这里以**退出码 3** 中止；
+2. `atf e2e --project wagtail-demo --filing submit --tracker <选择>` —— 真实提单；
+3. 归档 `atf/e2e-runs/`（含缺陷单号，保留 30 天）。
+
+**三条安全约定**（已写进 workflow）：
+
+- push/PR 事件永远不会走 `submit`（job 的 `if` 限定 `workflow_dispatch` 且 `real_submit != none`）；
+- 缺凭据时明确失败，不静默降级；
+- 提单产物保留 30 天，便于审计"提了哪些单"。
+
 > 真实缺陷系统只在发布前用 `--filing submit`（先跑 `atf tracker check`）；日常 PR 用 `mock`/`dry-run`。
 
 > 真实缺陷系统只在发布前用 `--filing submit`；日常 PR 用 `mock` 或 `dry-run`，避免噪声。

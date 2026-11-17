@@ -1,7 +1,12 @@
 # GitHub Actions 等价实现（与 ../.workflow/qa-e2e.yml 同一意图，便于跨平台迁移）
 #
 # 为什么要两套：流程层应当可替换，用例资产与内核不应被某个 CI 平台绑架。
-# 退出码语义见 docs/15-runbook.md §10：0 通过 / 1 用例失败 / 2 配置错误 / 3 环境未就绪。
+# 退出码语义见 docs/15-runbook.md §11：0 通过 / 1 用例失败 / 2 配置错误 / 3 环境未就绪。
+#
+# 三条安全约定：
+# 1. push / PR 只跑 mock 与 dry-run，**绝不**向真实缺陷系统提单；
+# 2. 真实提单只能手工触发（workflow_dispatch），且必须显式选择目标系统；
+# 3. Secrets 缺失时由 `atf tracker check` 明确失败（退出码 3），不静默降级成 dry-run。
 
 name: qa-e2e
 
@@ -10,13 +15,19 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
-  workflow_dispatch: {}   # 允许手工触发（首次接入 GitHub 时便于立即验证）
+  workflow_dispatch:
+    inputs:
+      real_submit:
+        description: "真实提单到缺陷系统（需已配置 Secrets）"
+        type: choice
+        options: [none, both, zentao, jira]
+        default: none
 
 permissions:
   contents: read
 
 concurrency:
-  group: qa-e2e-${{ github.ref }}
+  group: qa-e2e-${{ github.ref }}-${{ inputs.real_submit || 'none' }}
   cancel-in-progress: true
 
 env:
@@ -43,6 +54,9 @@ jobs:
           python -m atf validate
           python -m atf validate --project static-demo
           python scripts/build_docs_index.py --check
+          python scripts/check_links.py
+      - name: 缺陷适配器体检（mock，无需凭据）
+        run: python -m atf tracker check --tracker both --mock
 
   e2e:
     name: 端到端（两个项目）
@@ -83,8 +97,54 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: |
+      - name: 安装依赖与浏览器
+        run: |
           python -m pip install -q -r labs/requirements.txt -r labs/07-real-project/requirements.txt
           python -m playwright install --with-deps chromium
       - name: 一致性验收
         run: python -m atf e2e --project wagtail-demo --filing dry-run --tracker both --repeat 3
+
+  submit:
+    name: 真实提单（手工触发，需 Secrets）
+    if: github.event_name == 'workflow_dispatch' && inputs.real_submit != 'none'
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: 安装依赖与浏览器
+        run: |
+          python -m pip install -q -r labs/requirements.txt -r labs/07-real-project/requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: 缺陷系统体检（缺 Secrets 会在这里以退出码 3 中止）
+        env:
+          ZENTAO_BASE_URL: ${{ secrets.ZENTAO_BASE_URL }}
+          ZENTAO_PRODUCT_ID: ${{ secrets.ZENTAO_PRODUCT_ID }}
+          ZENTAO_TOKEN: ${{ secrets.ZENTAO_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: python -m atf tracker check --tracker ${{ inputs.real_submit }}
+      - name: 真实提交缺陷
+        env:
+          ZENTAO_BASE_URL: ${{ secrets.ZENTAO_BASE_URL }}
+          ZENTAO_PRODUCT_ID: ${{ secrets.ZENTAO_PRODUCT_ID }}
+          ZENTAO_TOKEN: ${{ secrets.ZENTAO_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: |
+          python -m atf e2e --project wagtail-demo --filing submit --tracker ${{ inputs.real_submit }}
+      - name: 归档产物（含缺陷单号）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-submit-runs
+          path: atf/e2e-runs/
+          retention-days: 30
