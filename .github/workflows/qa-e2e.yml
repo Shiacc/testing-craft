@@ -7,9 +7,9 @@ name: qa-e2e
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+    branches: [main, master]
   workflow_dispatch: {}   # 允许手工触发（首次接入 GitHub 时便于立即验证）
 
 permissions:
@@ -73,7 +73,7 @@ jobs:
 
   accept:
     name: 主干验收（连跑 3 次一致）
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     needs: e2e
     runs-on: ubuntu-latest
     timeout-minutes: 45
