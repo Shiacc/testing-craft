@@ -308,20 +308,24 @@ python -m atf coverage --project static-demo
 ### 11.0 已验证的 GitHub 运行（2026-11-17）
 
 仓库：`git@github.com:Shiacc/testing-craft.git`（公开，Actions 免费不限量）
-运行：[run #1](https://github.com/Shiacc/testing-craft/actions/runs/44033131092) · **success** · 总耗时 3 分 32 秒
 
-| job | 步骤 | 结论 | 耗时 |
+| run | 事件 | 结论 | 说明 |
 |---|---|---|---|
-| 静态检查 | 装依赖 → 语法与配置校验（compileall + 两个项目 validate + 索引 check） | success | 24s |
-| 端到端（两个项目） | 装依赖与浏览器 → 项目 1（Wagtail 全栈）→ 项目 2（静态站点）→ 归档产物 | success | 60s |
-| 主干验收（连跑 3 次一致） | 一致性验收（`--repeat 3`） | success | 120s |
+| [#1](https://github.com/Shiacc/testing-craft/actions/runs/44033131092) | push | success | 3m32s：静态检查 24s / 端到端 60s / 主干验收 120s |
+| [#2](https://github.com/Shiacc/testing-craft/actions/runs/44033934873) | push | success | 文档与实证更新后复跑，仍全绿 |
+| [#3](https://github.com/Shiacc/testing-craft/actions/runs/44037708832) | push | success | 新增 check_links 与 `tracker check --mock` 后全绿 |
 
-> 这次运行的三个 job 全部 success，说明「一条命令 + 两个项目 + 连跑一致性」在干净 Linux runner 上可复现。
+run #3 的四个 job 结论（关键证据）：
 
-| 文件 | 平台 | 说明 |
-|---|---|---|
-| `.workflow/qa-e2e.yml` | Gitee Go | 字段随版本演进，**首次启用需在控制台对照模板校正后运行一次**（本地无法验证） |
-| `.github/workflows/qa-e2e.yml` | GitHub Actions | 标准语法；本地仅校验 YAML 可解析 |
+| job | 结论 |
+|---|---|
+| 静态检查 | success（含 `scripts/check_links.py`、`atf tracker check --mock`） |
+| 端到端（两个项目） | success |
+| 主干验收（连跑 3 次一致） | success |
+| **真实提单（手工触发，需 Secrets）** | **skipped** ← 证明 push 事件不会真的提单 |
+
+> 三条证据合起来说明：① 一条命令 + 两个项目在干净 Linux runner 上可复现；
+> ② 连跑一致性成立；③ 真实提单的闸门有效（只有 `workflow_dispatch` 且 `real_submit != none` 才执行）。
 
 ### 11.1 先上 GitHub（免费额度说明 + 三步接入）
 
