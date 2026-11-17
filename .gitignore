@@ -3,6 +3,7 @@
 runs/
 artifacts/
 atf/runs/
+atf/e2e-runs/
 atf/state/
 .pytest_cache/
 __pycache__/
@@ -31,3 +32,4 @@ test-results/
 .vscode/
 .DS_Store
 Thumbs.db
+

@@ -105,7 +105,8 @@ def file_failures(
                 FilingOutcome(
                     case_id=draft.case_id,
                     fingerprint=draft.fingerprint,
-                    action="duplicate",
+                    # dry-run 下如实说明"已存在，将跳过"，避免被误读成"这次要提交"
+                    action="would-duplicate" if dry_run else "duplicate",
                     tracker=existing.get("tracker", ""),
                     key=existing.get("key", ""),
                     url=existing.get("url", ""),

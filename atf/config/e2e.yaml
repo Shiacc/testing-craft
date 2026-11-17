@@ -1,0 +1,85 @@
+# ---------------------------------------------------------------------------
+# 端到端流程配置（python -m atf e2e 读取）
+#
+# 这份文件是「一条命令跑完整个流程」的唯一配置源：
+# 环境重置怎么重置、被测服务怎么起、分几层跑、失败怎么归因、缺陷怎么提交、
+# 产物放哪里，全部在这里声明，代码里不写死任何项目细节。
+#
+# 换一个项目时，原则上只需要改这份文件 + 用例库（atf/cases/cases.yaml）。
+# 详细说明见 docs/15-runbook.md。
+# ---------------------------------------------------------------------------
+
+version: 1
+project: wagtail-demo
+description: 真实开源全栈项目（Wagtail 6.4 / Django 5.2）的端到端自动化流程
+
+# ------------------------------------------------------------------ 被测服务
+server:
+  cwd: labs/07-real-project/app
+  # 启动命令；{host}/{port} 由运行时替换
+  command: ["{python}", "manage.py", "runserver", "{host}:{port}", "--noreload"]
+  host: 127.0.0.1
+  port: 8099
+  # 就绪探测：GET 该路径返回 < 400 视为就绪
+  ready_path: /admin/login/
+  ready_timeout_s: 90
+  ready_interval_s: 1.0
+  # 日志落到 <artifacts>/<run_id>/server.log
+  log_file: server.log
+
+# ------------------------------------------------------------------ 环境重置
+setup:
+  # 默认每次运行前删除 sqlite 与种子状态，保证「从零开始」
+  reset_files:
+    - labs/07-real-project/app/db.sqlite3
+    - labs/07-real-project/app/.seed_state.json
+  commands:
+    - ["{python}", "manage.py", "migrate", "--noinput"]
+    - ["{python}", "manage.py", "seed_demo"]
+    - ["{python}", "manage.py", "ensure_qa_user"]
+    - ["{python}", "manage.py", "cleanup_qa_pages"]
+
+# ------------------------------------------------------------------ 分层执行
+suites_cwd: labs/07-real-project
+
+suites:
+  - id: l1
+    name: L1 单元（种子计划）
+    marker: l1
+    required: true
+  - id: l3
+    name: L3 HTTP（页面/导航/sitemap/后台入口）
+    marker: "l3 and not canary"
+    required: true
+  - id: l4
+    name: L4 UI（后台登录 + 发布链路）
+    marker: l4
+    required: true
+  - id: canary
+    name: 演练负向（robots.txt 缺失，预期失败）
+    marker: canary
+    required: false
+    expect_failures: true
+    env:
+      QA_RUN_CANARY: "1"
+
+# ------------------------------------------------------------------ 缺陷联动
+filing:
+  # dry-run：只打印将提交什么，不联网（默认，无需凭据）
+  # mock   ：起本地 mock 禅道/Jira，真实走一遍提交流程
+  # submit ：提交到真实缺陷系统（需环境变量凭据）
+  mode: mock
+  # zentao | jira | both
+  tracker: both
+  # mock 模式下每个 run 用独立去重表，避免上一轮的 filed 记录把这一轮变成 duplicate
+  isolate_state: true
+
+# ------------------------------------------------------------------ 产物与超时
+artifacts:
+  dir: atf/e2e-runs
+  keep_junit: true
+  write_markdown: true
+timeouts:
+  suite_s: 900
+  setup_s: 300
+  total_s: 3600

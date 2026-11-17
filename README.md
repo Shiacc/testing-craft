@@ -3,7 +3,7 @@
 > 一份可以直接拿去用的企业级测试知识体系 + 6 个可运行实验。
 > 回答三个问题：**要不要自动化、用什么工具、怎么在组织里跑起来。**
 
-[![docs](https://img.shields.io/badge/docs-14%20篇-2563eb)](docs/index.md)
+[![docs](https://img.shields.io/badge/docs-15%20篇-2563eb)](docs/index.md)
 [![labs](https://img.shields.io/badge/labs-6%20个-0f9d58)](labs/README.md)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](labs/requirements.txt)
 
@@ -64,13 +64,23 @@ python -m atf run --tag canary --canary --dry-run   # 失败 → 缺陷草稿（
 python skills/qa-full-cycle/scripts/run_cycle.py --tag "not canary" --target-url http://127.0.0.1:8099
 ```
 
+**一条命令跑完整个流程**（重置 → 起服务 → 分层执行 → 归因 → 缺陷 → 报告）：
+
+```powershell
+.\scripts\run_e2e.ps1                 # mock 缺陷流（禅道 + Jira 都走一遍）
+.\scripts\run_e2e.ps1 -Repeat 3        # 验收：连跑 3 次并对比一致性
+python -m atf e2e --filing dry-run      # 只预览将提交什么
+```
+
+配置项、验收标准、故障排查、换项目清单见 [docs/15-runbook.md](docs/15-runbook.md)。
+
 ---
 
 ## 目录
 
 ```
 testing-craft/
-├── docs/                     14 篇企业级文档
+├── docs/                     15 篇企业级文档
 │   ├── index.md              文档索引页（脚本生成：按问题/角色/小节查）
 │   ├── README.md             导读：核心结论速查、约定、变更记录
 │   ├── 01-concepts-and-terminology.md
@@ -86,7 +96,8 @@ testing-craft/
 │   ├── 11-templates-and-checklists.md
 │   ├── 12-real-project-playbook.md          真实项目接入实战
 │   ├── 13-case-library-and-bug-integration.md 用例库与缺陷联动
-│   └── 14-skill-development.md              Skill 开发
+│   ├── 14-skill-development.md              Skill 开发
+│   └── 15-runbook.md                        配置与操作手册（一条命令 + 验收 + 排障）
 ├── labs/                     7 个可运行实验
 │   ├── 01-unit-pytest/       L1 单元测试：参数化、fixture、marker、覆盖率、缺陷回归
 │   ├── 02-api-contract/      L3 接口与契约：错误码矩阵、幂等、状态机、OpenAPI 契约
@@ -102,7 +113,9 @@ testing-craft/
 │   ├── bugflow.py            失败 → BugDraft → 指纹去重 → 提交
 │   └── bugfiler/             禅道/Jira 适配器 + mock 服务
 ├── skills/qa-full-cycle/     把流程做成 AI 可复用 Skill（校验 9 项全 PASS）
-├── scripts/build_docs_index.py  索引页生成器（--check 可进 CI）
+├── scripts/
+│   ├── build_docs_index.py   索引页生成器（--check 可进 CI）
+│   └── run_e2e.ps1           一键跑完整流程（薄包装，逻辑在 python -m atf e2e）
 └── tests/bugfiler/           适配器单测（31 passed，对 mock 全链路）
 ```
 

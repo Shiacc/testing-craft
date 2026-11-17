@@ -141,6 +141,10 @@ python skills/qa-full-cycle/scripts/check_env.py --target-url http://localhost:8
 
 ---
 
+> **本仓库已提供一键执行**：python -m atf e2e --filing mock --tracker both
+> （或 Windows 下 scripts/run_e2e.ps1）会把「重置 → 起服务 → 分层执行 → 归因 → 缺陷 → 报告」一次跑完；
+> 全部配置项与验收标准见仓库 docs/15-runbook.md。分步执行时仍可用下面的命令。
+
 ## S4 归因
 
 **输入**：S3 的失败清单 + 每条用例的判定标准 + 现场证据（日志/截图/trace/响应体）。

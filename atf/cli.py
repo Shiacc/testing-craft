@@ -165,6 +165,30 @@ def cmd_file_bugs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_e2e(args: argparse.Namespace) -> int:
+    """转发给 atf.e2e（端到端编排），保持命令入口唯一。"""
+    from . import e2e
+
+    forwarded: list[str] = []
+    if args.config:
+        forwarded += ["--config", args.config]
+    if args.filing:
+        forwarded += ["--filing", args.filing]
+    if args.tracker:
+        forwarded += ["--tracker", args.tracker]
+    if args.port:
+        forwarded += ["--port", str(args.port)]
+    if args.no_reset:
+        forwarded += ["--no-reset"]
+    if args.keep_server:
+        forwarded += ["--keep-server"]
+    if args.repeat and args.repeat != 1:
+        forwarded += ["--repeat", str(args.repeat)]
+    if args.e2e_extra:
+        forwarded += args.e2e_extra
+    return e2e.main(forwarded)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="atf", description="用例库 + 执行 + 缺陷联动")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -188,6 +212,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--target-url", default=None, help="覆盖被测地址（注入 QA_BASE_URL 给套件）")
     p_run.add_argument("pytest_args", nargs="*", help="透传给 pytest 的额外参数")
     p_run.set_defaults(func=cmd_run)
+
+    p_e2e = sub.add_parser("e2e", help="端到端：重置→起服务→分层执行→归因→缺陷→报告")
+    p_e2e.add_argument("--config", default=None, help="流程配置（默认 atf/config/e2e.yaml）")
+    p_e2e.add_argument("--filing", default=None, choices=["dry-run", "mock", "submit"])
+    p_e2e.add_argument("--tracker", default=None, choices=["zentao", "jira", "both"])
+    p_e2e.add_argument("--port", type=int, default=None)
+    p_e2e.add_argument("--no-reset", action="store_true")
+    p_e2e.add_argument("--keep-server", action="store_true")
+    p_e2e.add_argument("--repeat", type=int, default=1, help="连跑 N 次并对比一致性")
+    p_e2e.add_argument("e2e_extra", nargs="*", help="透传给 atf e2e 的额外参数")
+    p_e2e.set_defaults(func=cmd_e2e)
 
     p_bug = sub.add_parser("file-bugs", help="从最近一次运行生成/提交缺陷")
     p_bug.add_argument("--tracker", default="zentao", choices=["zentao", "jira"])
